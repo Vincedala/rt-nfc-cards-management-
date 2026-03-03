@@ -3,8 +3,12 @@ import {
   Search, 
   Filter, 
   Plus, 
+  MoreVertical, 
+  Link as LinkIcon, 
   History, 
   Edit2, 
+  ShieldAlert,
+  Download,
   Upload,
   UserPlus,
   Trash2,
@@ -17,21 +21,20 @@ import {
   Phone,
   Calendar,
   CreditCard,
+  Building2,
   User as UserIcon,
   ShieldCheck,
   ShieldHalf,
   UserCog,
+  Eye,
   RefreshCw,
   Info,
   ChevronRight,
   Fingerprint,
-  Unlink,
-  MapPin,
-  Link as LinkIcon,
-  Download
+  Unlink
 } from 'lucide-react';
 import { useAppStore } from '../hooks/useAppStore';
-import { User } from '../types';
+import { User, Card as CardType } from '../types';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -63,7 +66,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 
-type ViewMode = 'list' | 'create' | 'import' | 'profile' | 'edit';
+type ViewMode = 'list' | 'create' | 'import' | 'profile';
 
 export default function UserManagement() {
   const { users, projects, cards, addUser, addUsers, deleteUser, updateUser, linkCard, unlinkCard } = useAppStore();
@@ -99,6 +102,7 @@ export default function UserManagement() {
   }, [users, searchTerm, filterProject, filterStatus]);
 
   const availableCards = useMemo(() => {
+    // Only cards from the same project as the user OR all available cards if project matches
     return cards.filter(c => !c.userId && (selectedUser ? c.project === selectedUser.project : true));
   }, [cards, selectedUser]);
 
@@ -116,36 +120,10 @@ export default function UserManagement() {
       role: formData.get('role') as any || 'Wallet User',
       status: 'Active',
       createdAt: new Date().toISOString(),
-      dateOfBirth: formData.get('dateOfBirth') as string,
-      address: formData.get('address') as string,
     };
     addUser(newUser);
     toast.success('User created successfully');
     setView('list');
-  };
-
-  const handleUpdateUser = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedUser) return;
-
-    const formData = new FormData(e.currentTarget);
-    const updatedUser: User = {
-      ...selectedUser,
-      name: formData.get('name') as string,
-      email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      civilId: formData.get('civilId') as string,
-      idType: formData.get('idType') as any,
-      project: formData.get('project') as string,
-      role: formData.get('role') as any,
-      status: formData.get('status') as any,
-      dateOfBirth: formData.get('dateOfBirth') as string,
-      address: formData.get('address') as string,
-    };
-    updateUser(updatedUser);
-    setSelectedUser(updatedUser);
-    toast.success('User updated successfully');
-    setView('profile');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,17 +162,12 @@ export default function UserManagement() {
     setView('profile');
   };
 
-  const openEdit = (user: User, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setSelectedUser(user);
-    setView('edit');
-  };
-
   const handleLinkCard = () => {
     if (selectedUser && cardToLink) {
       linkCard(cardToLink, selectedUser.id);
       setIsLinkModalOpen(false);
       setCardToLink('');
+      // Update local selected user
       setSelectedUser({ ...selectedUser, linkedCard: cardToLink });
       toast.success(`Card ${cardToLink} linked to ${selectedUser.name}`);
     }
@@ -272,6 +245,7 @@ export default function UserManagement() {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-4"
           >
+            {/* Quick Actions / Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -303,6 +277,7 @@ export default function UserManagement() {
                </div>
             </div>
 
+            {/* Filters & Search */}
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -339,6 +314,7 @@ export default function UserManagement() {
               </div>
             </div>
 
+            {/* Table */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -422,27 +398,19 @@ export default function UserManagement() {
                           </td>
                           <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
-                                onClick={(e) => openEdit(user, e)}
-                                title="Edit User"
-                              >
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600 rounded-lg">
                                 <Edit2 className="w-4 h-4" />
                               </Button>
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                                className="h-8 w-8 text-slate-400 hover:text-red-600 rounded-lg"
+                                onClick={() => {
                                   if(confirm('Are you sure you want to delete this user?')) {
                                     deleteUser(user.id);
                                     toast.success('User deleted');
                                   }
                                 }}
-                                title="Delete User"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -486,34 +454,29 @@ export default function UserManagement() {
           </motion.div>
         )}
 
-        {(view === 'create' || view === 'edit') && (
+        {view === 'create' && (
           <motion.div 
-            key={view}
+            key="create"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            className="max-w-5xl mx-auto"
+            className="max-w-4xl mx-auto"
           >
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <div className="lg:col-span-2 hidden lg:block">
-                 <div className="relative h-full rounded-3xl overflow-hidden shadow-2xl sticky top-6">
+                 <div className="relative h-full rounded-3xl overflow-hidden shadow-2xl">
                     <img 
-                      src={view === 'create' 
-                        ? "https://storage.googleapis.com/dala-prod-public-storage/generated-images/de99b6b7-b95e-4675-be9a-9433df810cc5/admin-user-registration-ui-c8f910b6-1772570833594.webp"
-                        : "https://storage.googleapis.com/dala-prod-public-storage/generated-images/de99b6b7-b95e-4675-be9a-9433df810cc5/edit-user-profile-illustration-e7fce4d7-1772572432541.webp"
-                      }
+                      src="https://storage.googleapis.com/dala-prod-public-storage/generated-images/de99b6b7-b95e-4675-be9a-9433df810cc5/admin-user-registration-ui-c8f910b6-1772570833594.webp"
                       alt="Registration"
-                      className="w-full h-full object-cover min-h-[600px]"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/95 via-blue-900/40 to-transparent p-8 flex flex-col justify-end text-white">
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent p-8 flex flex-col justify-end text-white">
                       <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-lg">
-                         {view === 'create' ? <Fingerprint className="w-6 h-6" /> : <Edit2 className="w-6 h-6" />}
+                         <Fingerprint className="w-6 h-6" />
                       </div>
-                      <h3 className="text-2xl font-bold mb-2">{view === 'create' ? 'Secure Registration' : 'Update Credentials'}</h3>
+                      <h3 className="text-2xl font-bold mb-2">Secure Registration</h3>
                       <p className="text-blue-100 text-sm leading-relaxed mb-6">
-                        {view === 'create' 
-                          ? 'Register new administrators and staff members to the NFC platform. Ensure you assign the correct project and role to maintain security protocols.'
-                          : 'Update user credentials, contact information, and project assignments. All changes are logged for security auditing purposes.'}
+                        Register new administrators and staff members to the NFC platform. Ensure you assign the correct project and role to maintain security protocols.
                       </p>
                       <div className="space-y-3">
                         <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10">
@@ -522,7 +485,7 @@ export default function UserManagement() {
                         </div>
                         <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10">
                            <History className="w-5 h-5 text-blue-400" />
-                           <p className="text-xs font-medium">Audit logs track all {view === 'create' ? 'registrations' : 'updates'}</p>
+                           <p className="text-xs font-medium">Audit logs track all registrations</p>
                         </div>
                       </div>
                     </div>
@@ -534,11 +497,11 @@ export default function UserManagement() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                          {view === 'create' ? <UserPlus className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
+                          <UserPlus className="w-5 h-5" />
                         </div>
                         <div>
-                          <CardTitle className="text-xl">{view === 'create' ? 'Create New User' : 'Edit User Info'}</CardTitle>
-                          <CardDescription>{view === 'create' ? 'Register a new system or wallet user' : `Modifying account: ${selectedUser?.id}`}</CardDescription>
+                          <CardTitle className="text-xl">Create New User</CardTitle>
+                          <CardDescription>Register a new system or wallet user</CardDescription>
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setView('list')} className="rounded-full">
@@ -546,9 +509,10 @@ export default function UserManagement() {
                       </Button>
                     </div>
                   </CardHeader>
-                  <form onSubmit={view === 'create' ? handleCreateUser : handleUpdateUser}>
+                  <form onSubmit={handleCreateUser}>
                     <CardContent className="p-6 md:p-8">
                       <div className="space-y-8">
+                        {/* Section: Identity */}
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
                              <UserIcon className="w-4 h-4" />
@@ -557,27 +521,20 @@ export default function UserManagement() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2 md:col-span-2">
                               <Label htmlFor="name" className="text-xs font-bold uppercase text-slate-500">Full Name</Label>
-                              <Input id="name" name="name" required defaultValue={selectedUser?.name} placeholder="e.g. John Kamau" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
+                              <Input id="name" name="name" required placeholder="e.g. John Kamau" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="email" className="text-xs font-bold uppercase text-slate-500">Email Address</Label>
-                              <Input id="email" name="email" type="email" required defaultValue={selectedUser?.email} placeholder="john.k@example.com" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
+                              <Input id="email" name="email" type="email" required placeholder="john.k@example.com" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="phone" className="text-xs font-bold uppercase text-slate-500">Phone Number</Label>
-                              <Input id="phone" name="phone" required defaultValue={selectedUser?.phone} placeholder="+254 7XX XXX XXX" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="dateOfBirth" className="text-xs font-bold uppercase text-slate-500">Date of Birth</Label>
-                              <Input id="dateOfBirth" name="dateOfBirth" type="date" defaultValue={selectedUser?.dateOfBirth} className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="address" className="text-xs font-bold uppercase text-slate-500">Physical Address</Label>
-                              <Input id="address" name="address" defaultValue={selectedUser?.address} placeholder="123 Street, City" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
+                              <Input id="phone" name="phone" required placeholder="+254 7XX XXX XXX" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
                             </div>
                           </div>
                         </div>
 
+                        {/* Section: Assignment */}
                         <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
                              <ShieldCheck className="w-4 h-4" />
@@ -586,7 +543,7 @@ export default function UserManagement() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="idType" className="text-xs font-bold uppercase text-slate-500">Identity Document Type</Label>
-                              <select name="idType" id="idType" defaultValue={selectedUser?.idType} className="w-full h-12 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/30 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer">
+                              <select name="idType" id="idType" className="w-full h-12 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/30 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer">
                                 <option value="National ID">National ID</option>
                                 <option value="Passport">Passport</option>
                                 <option value="Voter ID">Voter ID</option>
@@ -595,17 +552,17 @@ export default function UserManagement() {
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="civilId" className="text-xs font-bold uppercase text-slate-500">Identity Number</Label>
-                              <Input id="civilId" name="civilId" required defaultValue={selectedUser?.civilId} placeholder="12345678" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
+                              <Input id="civilId" name="civilId" required placeholder="12345678" className="rounded-xl h-12 border-slate-200 dark:border-slate-800 bg-slate-50/30 focus:bg-white transition-colors" />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="project" className="text-xs font-bold uppercase text-slate-500">Primary Project Assignment</Label>
-                              <select name="project" id="project" defaultValue={selectedUser?.project} className="w-full h-12 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/30 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer">
+                              <select name="project" id="project" className="w-full h-12 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/30 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer">
                                 {projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                               </select>
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="role" className="text-xs font-bold uppercase text-slate-500">System Access Role</Label>
-                              <select name="role" id="role" defaultValue={selectedUser?.role} className="w-full h-12 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/30 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer font-bold text-blue-700 dark:text-blue-400">
+                              <select name="role" id="role" className="w-full h-12 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/30 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer font-bold text-blue-700 dark:text-blue-400">
                                 <option value="Wallet User">Wallet User (Standard)</option>
                                 <option value="Operator">Operator (Staff)</option>
                                 <option value="Project Admin">Project Administrator</option>
@@ -613,15 +570,6 @@ export default function UserManagement() {
                                 <option value="Viewer">Viewer Only</option>
                               </select>
                             </div>
-                            {view === 'edit' && (
-                              <div className="space-y-2">
-                                <Label htmlFor="status" className="text-xs font-bold uppercase text-slate-500">Account Status</Label>
-                                <select name="status" id="status" defaultValue={selectedUser?.status} className="w-full h-12 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/30 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer">
-                                  <option value="Active">Active</option>
-                                  <option value="Inactive">Inactive</option>
-                                </select>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -630,9 +578,7 @@ export default function UserManagement() {
                         <Info className="w-5 h-5 text-blue-600 flex-shrink-0" />
                         <div>
                           <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
-                            {view === 'create' 
-                              ? 'Administrative roles will be sent an invitation email to set up their password. Wallet users require card linking for transaction processing.'
-                              : 'Modifying user roles or project assignments may affect their access to certain platform features and historical transaction data.'}
+                            Administrative roles will be sent an invitation email to set up their password. Wallet users are registered as active but require card linking for transaction processing.
                           </p>
                         </div>
                       </div>
@@ -642,7 +588,7 @@ export default function UserManagement() {
                         Cancel
                       </Button>
                       <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-blue-600/20">
-                        {view === 'create' ? 'Register Account' : 'Save Changes'}
+                        Register Account
                       </Button>
                     </CardFooter>
                   </form>
@@ -790,6 +736,7 @@ export default function UserManagement() {
             exit={{ opacity: 0, x: -20 }}
             className="grid grid-cols-1 lg:grid-cols-3 gap-6"
           >
+            {/* Sidebar / Main Info */}
             <div className="lg:col-span-1 space-y-6">
               <Card className="border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm p-8 text-center bg-white dark:bg-slate-900 border-none">
                 <div className="relative mx-auto w-32 h-32 mb-6">
@@ -842,24 +789,6 @@ export default function UserManagement() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Date of Birth</p>
-                      <p className="text-sm font-medium dark:text-slate-300">{selectedUser.dateOfBirth || 'Not provided'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400">
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Physical Address</p>
-                      <p className="text-sm font-medium dark:text-slate-300">{selectedUser.address || 'Not provided'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400">
                       <CreditCard className="w-4 h-4" />
                     </div>
                     <div>
@@ -871,6 +800,7 @@ export default function UserManagement() {
               </Card>
             </div>
 
+            {/* Main Content Area */}
             <div className="lg:col-span-2 space-y-6">
               <Card className="border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm bg-white dark:bg-slate-900 overflow-hidden border-none">
                 <div className="border-b border-slate-100 dark:border-slate-800 p-6 bg-slate-50/30 dark:bg-slate-800/20">
@@ -922,7 +852,7 @@ export default function UserManagement() {
                             className="p-0 h-auto text-blue-600 font-bold text-xs mt-2"
                             onClick={() => setIsLinkModalOpen(true)}
                           >
-                            Link new card \\u2192
+                            Link new card \u2192
                           </Button>
                         </div>
                       )}
@@ -944,6 +874,7 @@ export default function UserManagement() {
                     </div>
                   </div>
 
+                  {/* Card Details if linked */}
                   {userLinkedCard && (
                     <div className="mt-6 p-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
                       <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Card Details</h5>
@@ -991,7 +922,7 @@ export default function UserManagement() {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.action}</p>
-                            <p className="text-[11px] text-slate-500">{item.time} \\u2022 {item.loc}</p>
+                            <p className="text-[11px] text-slate-500">{item.time} \u2022 {item.loc}</p>
                           </div>
                         </div>
                       ))}
@@ -1015,8 +946,7 @@ export default function UserManagement() {
                   Deactivate User
                 </Button>
                 <Button 
-                  onClick={() => setView('edit')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 px-8 font-bold shadow-lg shadow-blue-600/20"
+                  className="bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl h-11 px-8 font-bold shadow-lg shadow-slate-900/20"
                 >
                   <Edit2 className="w-4 h-4 mr-2" />
                   Edit User Info
@@ -1027,6 +957,7 @@ export default function UserManagement() {
         )}
       </AnimatePresence>
 
+      {/* Link Card Modal */}
       <Dialog open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
         <DialogContent className="sm:max-w-[425px] rounded-3xl p-0 overflow-hidden border-none">
           <div className="relative h-32 w-full">

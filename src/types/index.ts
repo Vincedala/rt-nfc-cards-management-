@@ -11,8 +11,6 @@ export interface User {
   createdAt: string;
   lastLogin?: string;
   role: 'Super Admin' | 'Project Admin' | 'Operator' | 'Viewer' | 'Wallet User';
-  dateOfBirth?: string;
-  address?: string;
 }
 
 export interface Card {

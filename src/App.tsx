@@ -1,28 +1,34 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './components/theme-provider';
-import { Layout } from './components/Layout';
-import DashboardPage from './pages/Dashboard';
-import UserManagementPage from './pages/UserManagement';
-import CardManagementPage from './pages/CardManagement';
-import { Toaster } from 'sonner';
+import React, { useState } from 'react';
+import Layout from './components/Layout';
+import { AppProvider } from './hooks/useAppStore';
+import Dashboard from './pages/Dashboard';
+import UserManagement from './pages/UserManagement';
+import CardManagement from './pages/CardManagement';
+import ProjectManagement from './pages/ProjectManagement';
+import Reports from './pages/Reports';
+import Administration from './pages/Administration';
 
 function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard': return <Dashboard />;
+      case 'users': return <UserManagement />;
+      case 'cards': return <CardManagement />;
+      case 'projects': return <ProjectManagement />;
+      case 'reports': return <Reports />;
+      case 'admin': return <Administration />;
+      default: return <Dashboard />;
+    }
+  };
+
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/users" element={<UserManagementPage />} />
-            <Route path="/cards" element={<CardManagementPage />} />
-            <Route path="/settings" element={<div className="p-8 text-center text-muted-foreground font-medium">Settings page coming soon...</div>} />
-            <Route path="*" element={<DashboardPage />} />
-          </Routes>
-        </Layout>
-        <Toaster position="top-right" richColors closeButton />
-      </BrowserRouter>
-    </ThemeProvider>
+    <AppProvider>
+      <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
+        {renderContent()}
+      </Layout>
+    </AppProvider>
   );
 }
 

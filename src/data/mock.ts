@@ -1,82 +1,61 @@
-import { User, Card, Project, Activity } from '../types';
+export interface User {
+  id: string;
+  name: string;
+  phone: string;
+  civilId: string;
+  idType: string;
+  projectId: string;
+  linkedCardSerial?: string;
+  status: "Active" | "Inactive";
+  createdAt: string;
+}
+
+export interface Card {
+  serialNumber: string;
+  nfcCode: string;
+  status: "Active" | "Inactive";
+  projectId: string;
+  linkedUserId?: string;
+  linkedUserName?: string;
+  registeredAt: string;
+  notes?: string;
+  batchNumber?: string;
+  dateManufactured?: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  status: "Active" | "Inactive";
+  totalCards: number;
+  linkedCards: number;
+}
 
 export const PROJECTS: Project[] = [
-  { id: 'PRJ001', name: 'Kilimo Coop', description: 'Agricultural cooperative project', totalCards: 500, linkedCards: 120, unlinkedCards: 380, totalUsers: 150, status: 'Active', createdAt: '2024-01-10' },
-  { id: 'PRJ002', name: 'Gikomba Traders', description: 'Urban trade management', totalCards: 1000, linkedCards: 450, unlinkedCards: 550, totalUsers: 600, status: 'Active', createdAt: '2024-02-15' },
-  { id: 'PRJ003', name: 'Ruiru Community', description: 'Residential community welfare', totalCards: 500, linkedCards: 480, unlinkedCards: 20, totalUsers: 400, status: 'Active', createdAt: '2024-03-20' },
+  { id: "PRJ-001", name: "Kilimo Farmers Coop", description: "Agricultural community project", status: "Active", totalCards: 1200, linkedCards: 850 },
+  { id: "PRJ-002", name: "Gikomba Traders", description: "Market traders association", status: "Active", totalCards: 2500, linkedCards: 1200 },
+  { id: "PRJ-003", name: "Ruiru Community", description: "Residential community welfare", status: "Active", totalCards: 500, linkedCards: 480 },
 ];
 
 export const USERS: User[] = [
-  { 
-    id: 'USR001', 
-    name: 'John Kamau', 
-    email: 'john.k@example.com',
-    phone: '+254712345678', 
-    civilId: '12345678', 
-    idType: 'National ID', 
-    status: 'Active', 
-    project: 'Kilimo Coop', 
-    linkedCard: 'HP-1001',
-    createdAt: '2024-03-01T10:00:00Z',
-    lastLogin: '2024-03-15T09:00:00Z',
-    role: 'Project Admin',
-    dateOfBirth: '1985-05-15',
-    address: '123 Moi Avenue, Nairobi'
-  },
-  { 
-    id: 'USR002', 
-    name: 'Sarah Wanjiku', 
-    email: 'sarah.w@example.com',
-    phone: '+254722334455', 
-    civilId: '87654321', 
-    idType: 'Passport', 
-    status: 'Active', 
-    project: 'Gikomba Traders',
-    createdAt: '2024-03-02T11:00:00Z',
-    role: 'Super Admin',
-    dateOfBirth: '1990-08-22',
-    address: '456 Haile Selassie Rd, Nairobi'
-  },
-  { 
-    id: 'USR003', 
-    name: 'David Mutua', 
-    email: 'david.m@example.com',
-    phone: '+254700112233', 
-    civilId: '22334455', 
-    idType: 'Voter ID', 
-    status: 'Active', 
-    project: 'Kilimo Coop',
-    createdAt: '2024-03-03T12:00:00Z',
-    role: 'Wallet User',
-    dateOfBirth: '1995-12-01',
-    address: '789 Enterprise Rd, Nairobi'
-  },
-  { 
-    id: 'USR004', 
-    name: 'Alice Njoroge', 
-    email: 'alice.n@example.com',
-    phone: '+254700333444', 
-    civilId: '45678901', 
-    idType: 'National ID', 
-    project: 'Ruiru Community', 
-    linkedCard: 'HP-1004',
-    status: 'Active', 
-    createdAt: '2024-03-20T11:45:00Z', 
-    role: 'Wallet User',
-    dateOfBirth: '1988-11-30', 
-    address: '321 Juja Rd, Nairobi' 
-  },
+  { id: "USR-001", name: "John Kamau", phone: "+254 712 345 678", civilId: "12345678", idType: "National ID", projectId: "PRJ-001", linkedCardSerial: "HP-8829-X", status: "Active", createdAt: "2024-01-15T10:00:00Z" },
+  { id: "USR-002", name: "Sarah Wanjiku", phone: "+254 722 987 654", civilId: "23456789", idType: "National ID", projectId: "PRJ-002", linkedCardSerial: "HP-1122-A", status: "Active", createdAt: "2024-02-10T14:30:00Z" },
+  { id: "USR-003", name: "David Mutua", phone: "+254 733 111 222", civilId: "34567890", idType: "Passport", projectId: "PRJ-001", status: "Active", createdAt: "2024-03-05T09:15:00Z" },
+  { id: "USR-004", name: "Alice Njoroge", phone: "+254 700 333 444", civilId: "45678901", idType: "National ID", projectId: "PRJ-003", linkedCardSerial: "HP-5544-M", status: "Active", createdAt: "2024-03-20T11:45:00Z" },
 ];
 
 export const CARDS: Card[] = [
-  { serialNumber: 'HP-1001', nfcCode: '****A1B2', status: 'Active', userId: 'USR001', userName: 'John Kamau', project: 'Kilimo Coop', dateRegistered: '2024-03-01' },
-  { serialNumber: 'HP-1002', nfcCode: '****C3D4', status: 'Active', project: 'Kilimo Coop', dateRegistered: '2024-03-05' },
-  { serialNumber: 'HP-1003', nfcCode: '****E5F6', status: 'Inactive', project: 'Gikomba Traders', dateRegistered: '2024-03-10' },
-  { serialNumber: 'HP-1004', nfcCode: '****G7H8', status: 'Active', userId: 'USR004', userName: 'Alice Njoroge', project: 'Ruiru Community', dateRegistered: '2024-03-20' },
+  { serialNumber: "HP-8829-X", nfcCode: "NFC-8829-XXXX", status: "Active", projectId: "PRJ-001", linkedUserId: "USR-001", linkedUserName: "John Kamau", registeredAt: "2023-12-01T08:00:00Z" },
+  { serialNumber: "HP-1122-A", nfcCode: "NFC-1122-XXXX", status: "Active", projectId: "PRJ-002", linkedUserId: "USR-002", linkedUserName: "Sarah Wanjiku", registeredAt: "2023-12-15T09:00:00Z" },
+  { serialNumber: "HP-5544-M", nfcCode: "NFC-5544-XXXX", status: "Active", projectId: "PRJ-003", linkedUserId: "USR-004", linkedUserName: "Alice Njoroge", registeredAt: "2024-01-05T10:30:00Z" },
+  { serialNumber: "HP-9988-K", nfcCode: "NFC-9988-XXXX", status: "Active", projectId: "PRJ-001", registeredAt: "2024-02-01T11:00:00Z" },
+  { serialNumber: "HP-7766-S", nfcCode: "NFC-7766-XXXX", status: "Inactive", projectId: "PRJ-002", registeredAt: "2024-02-15T13:00:00Z" },
 ];
 
-export const ACTIVITIES: Activity[] = [
-  { id: 'ACT001', action: 'LINK_CARD', user: 'Admin Jane', timestamp: '2024-03-15 10:30', details: 'Linked HP-1001 to John Kamau' },
-  { id: 'ACT002', action: 'CREATE_USER', user: 'Admin Mike', timestamp: '2024-03-15 09:15', details: 'Created user Sarah Wanjiku' },
-  { id: 'ACT003', action: 'BULK_IMPORT', user: 'System', timestamp: '2024-03-14 16:20', details: 'Imported 150 users to Ruiru Community' },
+export const ACTIVITY_LOG = [
+  { id: 1, action: "LINK_CARD", details: "Card HP-8829-X linked to John Kamau", user: "Admin Sarah", timestamp: "2 mins ago" },
+  { id: 2, action: "CREATE_USER", details: "New user Alice Njoroge created", user: "Admin John", timestamp: "15 mins ago" },
+  { id: 3, action: "DEACTIVATE_CARD", details: "Card HP-7766-S deactivated", user: "Admin Sarah", timestamp: "1 hour ago" },
+  { id: 4, action: "BULK_IMPORT", details: "500 users imported to Kilimo Farmers project", user: "System", timestamp: "3 hours ago" },
 ];
