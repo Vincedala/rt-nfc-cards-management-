@@ -23,7 +23,8 @@ import {
   ArrowRightLeft,
   User as UserIcon,
   History as HistoryIcon,
-  AlertCircle
+  AlertCircle,
+  FileUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '../hooks/useAppStore';
@@ -57,6 +58,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import BulkCardImport from './BulkCardImport';
 
 type ViewMode = 'list' | 'register' | 'details';
 
@@ -71,6 +73,9 @@ export default function CardManagement() {
   // Link Modal State
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [userToLink, setUserToLink] = useState('');
+
+  // Bulk Import State
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
   const filteredCards = useMemo(() => {
     return cards.filter(c => {
@@ -172,10 +177,11 @@ export default function CardManagement() {
           )}
           <Button 
             variant="outline"
-            className="rounded-xl border-slate-200 dark:border-slate-800 h-10 px-4"
+            onClick={() => setIsBulkImportOpen(true)}
+            className="rounded-xl border-slate-200 dark:border-slate-800 h-10 px-4 font-semibold text-slate-700 dark:text-slate-300"
           >
-            <Scan className="w-4 h-4 mr-2" />
-            Batch Scan
+            <FileUp className="w-4 h-4 mr-2" />
+            Bulk Import
           </Button>
           <Button 
             onClick={() => setView('register')}
@@ -661,6 +667,11 @@ export default function CardManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BulkCardImport 
+        isOpen={isBulkImportOpen} 
+        onClose={() => setIsBulkImportOpen(false)} 
+      />
     </div>
   );
 }

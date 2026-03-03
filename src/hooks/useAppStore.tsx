@@ -11,6 +11,7 @@ interface AppContextType {
   updateUser: (user: User) => void;
   deleteUser: (userId: string) => void;
   addCard: (card: Card) => void;
+  addCards: (newCards: Card[]) => void;
   updateCard: (card: Card) => void;
   deleteCard: (serialNumber: string) => void;
   addProject: (project: Project) => void;
@@ -142,10 +143,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, ...prev]);
   };
 
+  const addCards = (newCards: Card[]) => {
+    setCards(prev => [...newCards, ...prev]);
+    setActivities(prev => [{
+      id: `ACT-${Date.now()}`,
+      action: 'BULK_IMPORT_CARDS',
+      user: 'Current Admin',
+      timestamp: new Date().toLocaleString(),
+      details: `Imported ${newCards.length} cards via bulk import`
+    }, ...prev]);
+  };
+
   const updateCard = (updatedCard: Card) => {
     setCards(prev => prev.map(c => c.serialNumber === updatedCard.serialNumber ? updatedCard : c));
     setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
+      id: `ACT-${Date.now()}` ,
       action: 'UPDATE_CARD',
       user: 'Current Admin',
       timestamp: new Date().toLocaleString(),
@@ -276,7 +288,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{ users, cards, projects, activities, addUser, addUsers, updateUser, deleteUser, addCard, updateCard, deleteCard, addProject, updateProject, deleteProject, linkCard, unlinkCard }}>
+    <AppContext.Provider value={{ users, cards, projects, activities, addUser, addUsers, updateUser, deleteUser, addCard, addCards, updateCard, deleteCard, addProject, updateProject, deleteProject, linkCard, unlinkCard }}>
       {children}
     </AppContext.Provider>
   );
