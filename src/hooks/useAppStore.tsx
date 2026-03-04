@@ -1,294 +1,292 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Card, Project, Activity } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AppContextType {
   users: User[];
   cards: Card[];
   projects: Project[];
   activities: Activity[];
-  addUser: (user: User) => void;
-  addUsers: (newUsers: User[]) => void;
-  updateUser: (user: User) => void;
-  deleteUser: (userId: string) => void;
-  addCard: (card: Card) => void;
-  addCards: (newCards: Card[]) => void;
-  updateCard: (card: Card) => void;
-  deleteCard: (serialNumber: string) => void;
-  addProject: (project: Project) => void;
-  updateProject: (project: Project) => void;
-  deleteProject: (projectId: string) => void;
-  linkCard: (cardSerial: string, userId: string) => void;
-  unlinkCard: (cardSerial: string) => void;
+  loading: boolean;
+  addUser: (user: User) => Promise<void>;
+  addUsers: (newUsers: User[]) => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
+  addCard: (card: Card) => Promise<void>;
+  addCards: (newCards: Card[]) => Promise<void>;
+  updateCard: (card: Card) => Promise<void>;
+  deleteCard: (serialNumber: string) => Promise<void>;
+  addProject: (project: Project) => Promise<void>;
+  updateProject: (project: Project) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
+  linkCard: (cardSerial: string, userId: string) => Promise<void>;
+  unlinkCard: (cardSerial: string) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<User[]>([
-    { 
-      id: 'USR001', 
-      name: 'John Kamau', 
-      email: 'john.k@example.com',
-      phone: '+254712345678', 
-      civilId: '12345678', 
-      idType: 'National ID', 
-      status: 'Active', 
-      project: 'Kilimo Coop', 
-      linkedCard: 'HP-1001',
-      createdAt: '2024-03-01T10:00:00Z',
-      lastLogin: '2024-03-15T09:00:00Z',
-      role: 'Project Admin'
-    },
-    { 
-      id: 'USR002', 
-      name: 'Sarah Wanjiku', 
-      email: 'sarah.w@example.com',
-      phone: '+254722334455', 
-      civilId: '87654321', 
-      idType: 'Passport', 
-      status: 'Active', 
-      project: 'Gikomba Traders',
-      createdAt: '2024-03-02T11:00:00Z',
-      role: 'Super Admin'
-    },
-    { 
-      id: 'USR003', 
-      name: 'David Mutua', 
-      email: 'david.m@example.com',
-      phone: '+254700112233', 
-      civilId: '22334455', 
-      idType: 'Voter ID', 
-      status: 'Active', 
-      project: 'Kilimo Coop',
-      createdAt: '2024-03-03T12:00:00Z',
-      role: 'Wallet User'
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [cards, setCards] = useState<Card[]>([
-    { serialNumber: 'HP-1001', nfcCode: '****A1B2', status: 'Active', userId: 'USR001', userName: 'John Kamau', project: 'Kilimo Coop', dateRegistered: '2024-03-01' },
-    { serialNumber: 'HP-1002', nfcCode: '****C3D4', status: 'Active', project: 'Kilimo Coop', dateRegistered: '2024-03-05' },
-    { serialNumber: 'HP-1003', nfcCode: '****E5F6', status: 'Inactive', project: 'Gikomba Traders', dateRegistered: '2024-03-10' },
-  ]);
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const { data: projectsData } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+      const { data: usersData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const { data: cardsData } = await supabase.from('cards').select('*').order('date_registered', { ascending: false });
+      const { data: activitiesData } = await supabase.from('activity_log').select('*').order('timestamp', { ascending: false });
 
-  const [projects, setProjects] = useState<Project[]>([
-    { id: 'PRJ001', name: 'Kilimo Coop', description: 'Agricultural cooperative project', totalCards: 500, linkedCards: 120, unlinkedCards: 380, totalUsers: 150, status: 'Active', createdAt: '2024-01-10' },
-    { id: 'PRJ002', name: 'Gikomba Traders', description: 'Urban trade management', totalCards: 1000, linkedCards: 450, unlinkedCards: 550, totalUsers: 600, status: 'Active', createdAt: '2024-02-15' },
-  ]);
-
-  const [activities, setActivities] = useState<Activity[]>([
-    { id: 'ACT001', action: 'LINK_CARD', user: 'Admin Jane', timestamp: '2024-03-15 10:30', details: 'Linked HP-1001 to John Kamau' },
-    { id: 'ACT002', action: 'CREATE_USER', user: 'Admin Mike', timestamp: '2024-03-15 09:15', details: 'Created user Sarah Wanjiku' },
-  ]);
-
-  const addUser = (user: User) => {
-    setUsers(prev => [user, ...prev]);
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'CREATE_USER',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Created user ${user.name} with role ${user.role}`
-    }, ...prev]);
+      if (projectsData) setProjects(projectsData as any);
+      if (usersData) setUsers(usersData.map(u => ({
+        ...u,
+        civilId: u.civil_id,
+        idType: u.id_type,
+        project: u.project_id,
+        linkedCard: u.linked_card_serial,
+        createdAt: u.created_at,
+        lastLogin: u.last_login
+      })) as any);
+      if (cardsData) setCards(cardsData.map(c => ({
+        ...c,
+        serialNumber: c.serial_number,
+        nfcCode: c.nfc_code,
+        userId: c.user_id,
+        userName: c.user_id ? usersData?.find(u => u.id === c.user_id)?.name : undefined,
+        project: c.project_id,
+        dateRegistered: c.date_registered,
+        dateManufactured: c.date_manufactured,
+        batchNumber: c.batch_number
+      })) as any);
+      if (activitiesData) setActivities(activitiesData.map(a => ({
+        ...a,
+        user: a.actor
+      })) as any);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const addUsers = (newUsers: User[]) => {
-    setUsers(prev => [...newUsers, ...prev]);
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'BULK_IMPORT',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Imported ${newUsers.length} users via bulk import`
-    }, ...prev]);
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const addActivity = async (action: string, actor: string, details: string) => {
+    await supabase.from('activity_log').insert({ action, actor, details });
+    const { data } = await supabase.from('activity_log').select('*').order('timestamp', { ascending: false }).limit(20);
+    if (data) setActivities(data.map(a => ({ ...a, user: a.actor })) as any);
   };
 
-  const updateUser = (updatedUser: User) => {
-    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'UPDATE_USER',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Updated user ${updatedUser.name}`
-    }, ...prev]);
+  const addUser = async (user: User) => {
+    const { error } = await supabase.from('profiles').insert({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      civil_id: user.civilId,
+      id_type: user.idType,
+      status: user.status,
+      project_id: user.project,
+      role: user.role
+    });
+    if (!error) {
+      await addActivity('CREATE_USER', 'System Admin', `Created user ${user.name}`);
+      await fetchAll();
+    }
   };
 
-  const deleteUser = (userId: string) => {
+  const addUsers = async (newUsers: User[]) => {
+    const { error } = await supabase.from('profiles').insert(newUsers.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      civil_id: user.civilId,
+      id_type: user.idType,
+      status: user.status,
+      project_id: user.project,
+      role: user.role
+    })));
+    if (!error) {
+      await addActivity('BULK_IMPORT', 'System Admin', `Imported ${newUsers.length} users`);
+      await fetchAll();
+    }
+  };
+
+  const updateUser = async (updatedUser: User) => {
+    const { error } = await supabase.from('profiles').update({
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      civil_id: updatedUser.civilId,
+      id_type: updatedUser.idType,
+      status: updatedUser.status,
+      project_id: updatedUser.project,
+      role: updatedUser.role
+    }).eq('id', updatedUser.id);
+    if (!error) {
+      await addActivity('UPDATE_USER', 'System Admin', `Updated user ${updatedUser.name}`);
+      await fetchAll();
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
     const user = users.find(u => u.id === userId);
-    // Unlink any card this user had
-    if (user?.linkedCard) {
-      setCards(prev => prev.map(c => 
-        c.serialNumber === user.linkedCard ? { ...c, userId: undefined, userName: undefined } : c
-      ));
+    const { error } = await supabase.from('profiles').delete().eq('id', userId);
+    if (!error) {
+      await addActivity('DELETE_USER', 'System Admin', `Deleted user ${user?.name || userId}`);
+      await fetchAll();
     }
-    setUsers(prev => prev.filter(u => u.id !== userId));
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'DELETE_USER',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Deleted user ${user?.name || userId}`
-    }, ...prev]);
   };
 
-  const addCard = (card: Card) => {
-    setCards(prev => [card, ...prev]);
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'REGISTER_CARD',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Registered card ${card.serialNumber} for project ${card.project}`
-    }, ...prev]);
-  };
-
-  const addCards = (newCards: Card[]) => {
-    setCards(prev => [...newCards, ...prev]);
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'BULK_IMPORT_CARDS',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Imported ${newCards.length} cards via bulk import`
-    }, ...prev]);
-  };
-
-  const updateCard = (updatedCard: Card) => {
-    setCards(prev => prev.map(c => c.serialNumber === updatedCard.serialNumber ? updatedCard : c));
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}` ,
-      action: 'UPDATE_CARD',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Updated card ${updatedCard.serialNumber}`
-    }, ...prev]);
-  };
-
-  const deleteCard = (serialNumber: string) => {
-    const card = cards.find(c => c.serialNumber === serialNumber);
-    // Unlink user if this card was linked
-    if (card?.userId) {
-      setUsers(prev => prev.map(u => 
-        u.id === card.userId ? { ...u, linkedCard: undefined } : u
-      ));
+  const addCard = async (card: Card) => {
+    const { error } = await supabase.from('cards').insert({
+      serial_number: card.serialNumber,
+      nfc_code: card.nfcCode,
+      status: card.status,
+      project_id: card.project,
+      notes: card.notes,
+      batch_number: card.batchNumber,
+      date_manufactured: card.dateManufactured
+    });
+    if (!error) {
+      await addActivity('REGISTER_CARD', 'System Admin', `Registered card ${card.serialNumber}`);
+      await fetchAll();
     }
-    setCards(prev => prev.filter(c => c.serialNumber !== serialNumber));
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'DELETE_CARD',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Deleted card ${serialNumber}`
-    }, ...prev]);
   };
 
-  const addProject = (project: Project) => {
-    setProjects(prev => [project, ...prev]);
-    setActivities(prev => [{
-        id: `ACT-${Date.now()}`,
-        action: 'CREATE_PROJECT',
-        user: 'Current Admin',
-        timestamp: new Date().toLocaleString(),
-        details: `Created project ${project.name}`
-    }, ...prev]);
+  const addCards = async (newCards: Card[]) => {
+    const { error } = await supabase.from('cards').insert(newCards.map(card => ({
+      serial_number: card.serialNumber,
+      nfc_code: card.nfcCode,
+      status: card.status,
+      project_id: card.project,
+      notes: card.notes,
+      batch_number: card.batchNumber,
+      date_manufactured: card.dateManufactured
+    })));
+    if (!error) {
+      await addActivity('BULK_IMPORT_CARDS', 'System Admin', `Imported ${newCards.length} cards`);
+      await fetchAll();
+    }
   };
 
-  const updateProject = (updatedProject: Project) => {
-    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-    setActivities(prev => [{
-        id: `ACT-${Date.now()}` ,
-        action: 'UPDATE_PROJECT',
-        user: 'Current Admin',
-        timestamp: new Date().toLocaleString(),
-        details: `Updated project ${updatedProject.name}`
-    }, ...prev]);
+  const updateCard = async (updatedCard: Card) => {
+    const { error } = await supabase.from('cards').update({
+      nfc_code: updatedCard.nfcCode,
+      status: updatedCard.status,
+      project_id: updatedCard.project,
+      notes: updatedCard.notes,
+      batch_number: updatedCard.batchNumber,
+      date_manufactured: updatedCard.dateManufactured
+    }).eq('serial_number', updatedCard.serialNumber);
+    if (!error) {
+      await addActivity('UPDATE_CARD', 'System Admin', `Updated card ${updatedCard.serialNumber}`);
+      await fetchAll();
+    }
   };
 
-  const deleteProject = (projectId: string) => {
+  const deleteCard = async (serialNumber: string) => {
+    const { error } = await supabase.from('cards').delete().eq('serial_number', serialNumber);
+    if (!error) {
+      await addActivity('DELETE_CARD', 'System Admin', `Deleted card ${serialNumber}`);
+      await fetchAll();
+    }
+  };
+
+  const addProject = async (project: Project) => {
+    const { error } = await supabase.from('projects').insert({
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      status: project.status
+    });
+    if (!error) {
+      await addActivity('CREATE_PROJECT', 'System Admin', `Created project ${project.name}`);
+      await fetchAll();
+    }
+  };
+
+  const updateProject = async (updatedProject: Project) => {
+    const { error } = await supabase.from('projects').update({
+      name: updatedProject.name,
+      description: updatedProject.description,
+      status: updatedProject.status
+    }).eq('id', updatedProject.id);
+    if (!error) {
+      await addActivity('UPDATE_PROJECT', 'System Admin', `Updated project ${updatedProject.name}`);
+      await fetchAll();
+    }
+  };
+
+  const deleteProject = async (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
-    setProjects(prev => prev.filter(p => p.id !== projectId));
-    setActivities(prev => [{
-        id: `ACT-${Date.now()}`,
-        action: 'DELETE_PROJECT',
-        user: 'Current Admin',
-        timestamp: new Date().toLocaleString(),
-        details: `Deleted project ${project?.name || projectId}`
-    }, ...prev]);
+    const { error } = await supabase.from('projects').delete().eq('id', projectId);
+    if (!error) {
+      await addActivity('DELETE_PROJECT', 'System Admin', `Deleted project ${project?.name || projectId}`);
+      await fetchAll();
+    }
   };
 
-  const linkCard = (cardSerial: string, userId: string) => {
+  const linkCard = async (cardSerial: string, userId: string) => {
     const user = users.find(u => u.id === userId);
-    const card = cards.find(c => c.serialNumber === cardSerial);
+    if (!user) return;
 
-    if (!user || !card) return;
+    // Supabase handles the link
+    const { error: cardUpdateError } = await supabase.from('cards').update({ user_id: userId }).eq('serial_number', cardSerial);
+    const { error: profileUpdateError } = await supabase.from('profiles').update({ linked_card_serial: cardSerial }).eq('id', userId);
 
-    // 1. If this card was linked to someone else, unlink them first
-    let previousUserIdOfCard = card.userId;
-    
-    // 2. If this user was linked to another card, unlink that card first
-    let previousCardSerialOfUser = user.linkedCard;
-
-    setUsers(prev => prev.map(u => {
-      // Unlink previous card from this user
-      if (u.id === userId) {
-        return { ...u, linkedCard: cardSerial };
-      }
-      // If the card we are linking was owned by someone else, they are now unlinked
-      if (previousUserIdOfCard && u.id === previousUserIdOfCard) {
-        return { ...u, linkedCard: undefined };
-      }
-      return u;
-    }));
-
-    setCards(prev => prev.map(c => {
-      // Link this card to the user
-      if (c.serialNumber === cardSerial) {
-        return { ...c, userId: userId, userName: user.name, status: 'Active' };
-      }
-      // If the user had a previous card, it's now unlinked
-      if (previousCardSerialOfUser && c.serialNumber === previousCardSerialOfUser) {
-        return { ...c, userId: undefined, userName: undefined };
-      }
-      return c;
-    }));
-
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'LINK_CARD',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Linked ${cardSerial} to ${user.name}`
-    }, ...prev]);
+    if (!cardUpdateError && !profileUpdateError) {
+      await addActivity('LINK_CARD', 'System Admin', `Linked ${cardSerial} to ${user.name}`);
+      await fetchAll();
+    }
   };
 
-  const unlinkCard = (cardSerial: string) => {
+  const unlinkCard = async (cardSerial: string) => {
     const card = cards.find(c => c.serialNumber === cardSerial);
     if (!card) return;
 
     const userId = card.userId;
 
-    setCards(prev => prev.map(c => 
-      c.serialNumber === cardSerial ? { ...c, userId: undefined, userName: undefined } : c
-    ));
-    
+    const { error: cardUpdateError } = await supabase.from('cards').update({ user_id: null }).eq('serial_number', cardSerial);
     if (userId) {
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, linkedCard: undefined } : u
-      ));
+      const { error: profileUpdateError } = await supabase.from('profiles').update({ linked_card_serial: null }).eq('id', userId);
     }
 
-    setActivities(prev => [{
-      id: `ACT-${Date.now()}`,
-      action: 'UNLINK_CARD',
-      user: 'Current Admin',
-      timestamp: new Date().toLocaleString(),
-      details: `Unlinked ${cardSerial}`
-    }, ...prev]);
+    if (!cardUpdateError) {
+      await addActivity('UNLINK_CARD', 'System Admin', `Unlinked ${cardSerial}`);
+      await fetchAll();
+    }
   };
 
   return (
-    <AppContext.Provider value={{ users, cards, projects, activities, addUser, addUsers, updateUser, deleteUser, addCard, addCards, updateCard, deleteCard, addProject, updateProject, deleteProject, linkCard, unlinkCard }}>
+    <AppContext.Provider value={{ 
+      users, 
+      cards, 
+      projects, 
+      activities, 
+      loading,
+      addUser, 
+      addUsers, 
+      updateUser, 
+      deleteUser, 
+      addCard, 
+      addCards, 
+      updateCard, 
+      deleteCard, 
+      addProject, 
+      updateProject, 
+      deleteProject, 
+      linkCard, 
+      unlinkCard,
+      refreshData: fetchAll
+    }}>
       {children}
     </AppContext.Provider>
   );
